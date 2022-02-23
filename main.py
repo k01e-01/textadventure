@@ -9,6 +9,7 @@ from rich.align import Align
 from rich.style import Style
 from rich.color import Color
 from rich.color_triplet import ColorTriplet
+from rich.layout import Layout
 from pynput import keyboard, mouse
 
 
@@ -25,19 +26,18 @@ class AnyKeyContinue:
 
         height = self.console.height
         width = self.console.width
+        
+        br = self.brightness
+        style = Style(color=Color.from_triplet(ColorTriplet(br,br,br)))
 
-        if not self.dim:
-            style = Style(color="color(15)")
-        else:
-            br = self.brightness
-            style = Style(color=Color.from_triplet(ColorTriplet(br,br,br)))
+        if self.dim:
             self.brightness -= 28
-
-            if self.brightness < 0:
-                style = Style(color="black")
-            
-            if self.brightness < -256:
-                return None
+        
+        if self.brightness < 0:
+            style = Style(color="black")
+        
+        if self.brightness < -256:
+            return None
 
         renderable = Align(
             Align(
@@ -65,7 +65,23 @@ class AnyKeyContinue:
 class Menu:
 
     def __init__(self, console: Console):
-        self.console = console\
+        self.console = console
+    
+    def update(self):
+
+        renderable = Layout()
+
+        renderable.split_row(
+            Layout(name="left", ratio=6),
+            Layout(name="saveselect", ratio=3)
+        )
+        renderable["left"].split_column(
+            Layout(name="controls"),
+            Layout(name="settings")
+        )
+
+        return renderable
+
 
 
 class LiveApp:
@@ -75,12 +91,16 @@ class LiveApp:
         self.framecount = -1
         self.state = 0
 
+
         self.screens = [
-            AnyKeyContinue(console=console)
+            AnyKeyContinue(console=console),
+            Menu(console=console)
         ]
 
 
     def update(self):
+        if self.state == -1: return None
+
         self.framecount += 1
 
         renderable = self.screens[self.state].update()
@@ -93,6 +113,9 @@ class LiveApp:
     
 
     def on_press(self, key):
+        if key == keyboard.Key.esc:
+            self.state = -1
+        
         try: self.screens[self.state].keyPress(key, True)
         except: pass
 
@@ -127,14 +150,16 @@ def main():
 
     keyListener = keyboard.Listener(
         on_press=liveapp.on_press,
-        on_release=liveapp.on_release
+        on_release=liveapp.on_release,
+        suppress=True
     )
     keyListener.start()
 
     mosListener = mouse.Listener(
         on_move=liveapp.on_move,
         on_click=liveapp.on_click,
-        on_scroll=liveapp.on_scroll
+        on_scroll=liveapp.on_scroll,
+        suppress=True
     )
     mosListener.start()
 
@@ -144,9 +169,10 @@ def main():
             while True:
                 starttime = time.time()
 
-                live.update(
-                    liveapp.update()
-                )
+                renderable = liveapp.update()
+                live.update(renderable)
+
+                if renderable == None: break
 
                 timedelta = time.time() - starttime
 
@@ -156,6 +182,9 @@ def main():
 
         except KeyboardInterrupt:
             pass
+            
+        keyListener.stop()
+        mosListener.stop()
 
 
 
