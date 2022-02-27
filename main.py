@@ -8,10 +8,14 @@
 #   i better get good marks :(
 #
 
+import rich
+import pynput
 import time
 import json
 import numpy as np
+import PIL
 import os
+import re
         
 from rich.console import Console
 from rich.live import Live
@@ -23,7 +27,8 @@ from rich.color_triplet import ColorTriplet
 from rich.layout import Layout
 from pynput import keyboard, mouse
 from PIL import Image
-
+from os import listdir
+from os.path import isfile, join
 
 class AnyKeyContinue:
 
@@ -90,7 +95,23 @@ class Room:
 
         if self.roomnum == -1:
             return self.test()
+
+        return self.render_layers()
     
+    def get_data(self):
+
+        # data consists of 
+        # textures
+
+        files = [f for f in listdir("./assets/textures/") if isfile(join("./assets/textures/", f))]
+        textures = {}
+        for file in files:
+            image = Image.open(file)
+            filename = re.match("(?<=\/)[^//\n]*(?=\.)", file).string
+            textures[filename] = np.array(image)
+
+        return (textures)
+
     def get_room_data(self):
 
         # room data consists of
@@ -116,6 +137,48 @@ class Room:
         # cant wait
 
         roomdata = self.get_room_data()
+        data = self.get_data()
+
+
+        try:
+            if self.tilemap: pass
+        except:
+            self.tilemap = roomdata[0]
+        
+        try:
+            if self.collisionmap: pass
+        except:
+            self.collisionmap = roomdata[1]
+        
+        try:
+            if self.objects: pass
+        except:
+            self.objects = roomdata[2]
+        
+
+        text = Text("")
+
+        for i in self.tilemap:
+            for ii in i:
+                pass
+                # TODO: do this
+        
+        width = self.console.width
+        height = self.console.height
+
+        renderable = Align(
+            renderable=text,
+            align="center",
+            vertical="middle",
+            width=width,
+            height=height
+        )
+
+        return renderable
+        
+
+
+
 
 
     def test(self):
@@ -125,7 +188,7 @@ class Room:
         
         text = Text("", justify="middle")
 
-        testgridsize = 96
+        testgridsize = 12*8
 
         # this was a mistake
         # i should lose at least one extra credit mark for this mess
