@@ -103,11 +103,12 @@ class Room:
         # data consists of 
         # textures
 
-        files = [f for f in listdir("./assets/textures/") if isfile(join("./assets/textures/", f))]
+        path = "./assets/textures"
+        files = [(join(path, f), f.split('.')[0]) for f in listdir(path) if isfile(join(path, f))]
         textures = {}
-        for file in files:
+
+        for file, filename in files:
             image = Image.open(file)
-            filename = re.match("(?<=\/)[^//\n]*(?=\.)", file).string
             textures[filename] = np.array(image)
 
         return (textures)
@@ -158,10 +159,21 @@ class Room:
 
         text = Text("")
 
-        for i in self.tilemap:
-            for ii in i:
-                pass
-                # TODO: do this
+        # due to the tilesize being 8, this weird code block is nessacary
+        # please dont ask
+        for y in self.tilemap:
+            for y2 in range(8):
+                for x in y:
+                    for x2 in range(8):
+
+                        texture = data[x]
+                        rgb = texture[x2][y2]
+
+                        color = Color.from_triplet( ColorTriplet(rgb[0], rgb[1], rgb[2]) )
+                        style = Style(bgcolor=color)
+                        text += Text('  ', style=style)
+               
+                text += '\n'
         
         width = self.console.width
         height = self.console.height
@@ -176,10 +188,6 @@ class Room:
 
         return renderable
         
-
-
-
-
 
     def test(self):
 
@@ -227,7 +235,7 @@ class LiveApp:
 
         self.screens = [
             AnyKeyContinue(console=console),
-            Room(console=console, framecount=self.framecount, roomnum=-1)
+            Room(console=console, framecount=self.framecount, roomnum=0)
         ]
 
 
@@ -236,21 +244,16 @@ class LiveApp:
 
         self.framecount += 1
     
-        try:
-            # update current screen
-            # list not typed properly so vsc cant tell its a function
-            # still better than replit
-            renderable = self.screens[self.state].update()
+        # update current screen
+        # list not typed properly so vsc cant tell its a function
+        # still better than replit
+        renderable = self.screens[self.state].update()
 
-            if type(renderable) == int:
-                self.state += renderable
-                renderable = self.screens[self.state].update()
+        if type(renderable) == int:
+            self.state += renderable
+            renderable = self.screens[self.state].update()
         
-        except: pass
-        
-        # the above try except block is not nessecary, as the program will crash anyway at this point
-        # but i dont care
-        # shut up
+        # yeah actually i did need to remove the try except block
         return renderable
     
 
@@ -269,8 +272,6 @@ class LiveApp:
         except: pass
 
 
-
-    
 
 
 def main():
