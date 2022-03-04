@@ -3,5 +3,10 @@
         "name": "player",
         "posX": 40,
         "posY": 40
+    },
+    {
+        "name": "computer",
+        "posX": 60,
+        "posY": 45
     }
 ]

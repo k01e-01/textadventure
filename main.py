@@ -90,13 +90,15 @@ class Room:
         self.console = console
         self.roomnum = roomnum
         self.frames = framecount
-    
-    def update(self):
 
-        if self.roomnum == -1:
-            return self.test()
-
-        return self.render_layers()
+        # [0] - forward
+        # [1] - backward
+        # [2] - left
+        # [3] - right
+        # [4] - z
+        # [5] - x
+        # [6] - c
+        self.input = [0,0,0,0, 0,0,0]
     
     def get_data(self):
 
@@ -132,10 +134,11 @@ class Room:
         return (roommap, roomcollide, roomobjects)
 
     
-    def render_layers(self):
-        
-        # TODO: create the other 500 lines of render_layers()
-        # cant wait
+    def update(self):
+
+        if self.roomnum == -1:
+            return self.test()
+
 
         roomdata = self.get_room_data()
         data = self.get_data()
@@ -157,24 +160,49 @@ class Room:
             self.objects = roomdata[2]
         
 
-        text = Text("")
+        pixels: list[list[Style]] = []
 
         # due to the tilesize being 8, this weird code block is nessacary
         # please dont ask
         for y in self.tilemap:
             for y2 in range(8):
+                
+                pixels.append([])
+
                 for x in y:
                     for x2 in range(8):
 
                         texture = data[x]
-                        rgb = texture[x2][y2]
+                        rgb = texture[y2][x2]
 
                         color = Color.from_triplet( ColorTriplet(rgb[0], rgb[1], rgb[2]) )
                         style = Style(bgcolor=color)
-                        text += Text('  ', style=style)
-               
-                text += '\n'
+                        pixels[-1].append(style)
         
+
+        for object in self.objects:
+
+            texture = data[object["name"]]
+            x = object["posX"]
+            y = object["posY"]
+
+            for oy in range(8):
+                for ox in range(8):
+
+                    colors = texture[oy][ox]
+                    style = Style(bgcolor=Color.from_triplet(
+                        ColorTriplet(colors[0], colors[1], colors[2])
+                    ))
+                    if int(colors[0]) + int(colors[1]) + int(colors[2]) != 0:
+                        pixels[y+oy][x+ox] = style
+
+        text = Text("")
+
+        for y in pixels:
+            for x in y:
+                text.append("  ", x)
+            text.append('\n')
+
         width = self.console.width
         height = self.console.height
 
@@ -186,8 +214,43 @@ class Room:
             height=height
         )
 
+        self.physics()
+
         return renderable
         
+
+    def physics(self):
+        
+        speed = 3
+
+        if self.input[0]:
+            y_next = self.objects[0]["posY"] - speed
+            x = self.objects[0]["posX"]
+
+            if not self.collisionmap [round( (y_next+4)/8 )] [round( x/8 )]:
+                self.objects[0]["posY"] -= speed
+        
+        if self.input[1]:
+            y_next = self.objects[0]["posY"] + speed
+            x = self.objects[0]["posX"]
+
+            if not self.collisionmap [round( (y_next+4)/8 )] [round( x/8 )]:
+                self.objects[0]["posY"] += speed
+
+        if self.input[2]:
+            x_next = self.objects[0]["posX"] - speed
+            y = self.objects[0]["posY"]
+
+            if not self.collisionmap [round( (x_next+4)/8 )] [round( y/8 )]:
+                self.objects[0]["posX"] -= speed
+        
+        if self.input[3]:
+            x_next = self.objects[0]["posX"] + speed
+            y = self.objects[0]["posY"]
+
+            if not self.collisionmap [round( (x_next+4)/8 )] [round( y/8 )]:
+                self.objects[0]["posX"] += speed
+
 
     def test(self):
 
@@ -221,10 +284,37 @@ class Room:
         )
 
         return renderable
+    
+    def keyPress(self, key: keyboard.Key, down):
+
+        if down:
+            if key == keyboard.Key.up:    self.input[0] = 1
+            if key == keyboard.Key.down:  self.input[1] = 1
+            if key == keyboard.Key.left:  self.input[2] = 1
+            if key == keyboard.Key.right: self.input[3] = 1
+
+            try:
+                if key.char == "z":       self.input[4] = 1
+                if key.char == "x":       self.input[5] = 1
+                if key.char == "c":       self.input[6] = 1
+            except: pass
+        
+        else:
+            if key == keyboard.Key.up:    self.input[0] = 0
+            if key == keyboard.Key.down:  self.input[1] = 0
+            if key == keyboard.Key.left:  self.input[2] = 0
+            if key == keyboard.Key.right: self.input[3] = 0
+
+            try:
+                if key.char == "z":       self.input[4] = 0
+                if key.char == "x":       self.input[5] = 0
+                if key.char == "c":       self.input[6] = 0
+            except: pass
+        
 
 
 
-
+        
 class LiveApp:
 
     def __init__(self, console: Console):
@@ -264,12 +354,10 @@ class LiveApp:
         if key == keyboard.Key.esc:
             self.state = -1
         
-        try: self.screens[self.state].keyPress(key, True)
-        except: pass
+        self.screens[self.state].keyPress(key, True)
 
     def on_release(self, key):
-        try: self.screens[self.state].keyPress(key, False)
-        except: pass
+        self.screens[self.state].keyPress(key, False)
 
 
 
@@ -280,6 +368,8 @@ def main():
     liveapp = LiveApp(console=console)
 
     suppress = True
+
+    fps = 30
     
     # key listener to catch and supress key inputs
     # hopefully it won't break my computer again
@@ -299,7 +389,7 @@ def main():
     mosListener.start()
 
     # start live loop, finally
-    with Live(renderable = None, console = console, refresh_per_second = 20, transient=True) as live:
+    with Live(renderable = None, console = console, refresh_per_second = fps, transient=True) as live:
 
         try:
             while True:
@@ -314,8 +404,8 @@ def main():
                 # gotta get that 60 fps text adventure gaming B)
                 timedelta = time.time() - starttime
 
-                if timedelta < 0.05:
-                    time.sleep(0.05 - timedelta)
+                if timedelta < 1 / fps:
+                    time.sleep(1 / fps - timedelta)
                 
         # not actually possible anymore due to supression
         # not actually possible to remove due to laziness
