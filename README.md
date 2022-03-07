@@ -14,4 +14,4 @@ Hello! This project was created as an assignment for school. If you would like t
 
 -----
 
-In it's current state, this project is very much unfinished. I plan to return to it some day to finish it off, and potentially create a new terminal game engine from scratch, similar to Unity, Source, or Unreal. However, if you want to, you may fork this project to work on it yourself if you want to.  
+In it's current state, this project is very much unfinished. I plan to return to it some day to finish it off, and potentially create a new terminal game engine from scratch, similar to Unity, Source, or Unreal. However, if you want to, you may fork this project to work on it yourself.  
