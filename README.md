@@ -12,6 +12,11 @@ Hello! This project was created as an assignment for school. If you would like t
 4. Reduce the spacing to 0.56 and 0.5.
 5. Run main.py, and press a key to continue.
 
+Use the arrow keys to move.
+Use the Z key to interact or run.
+Use the X key to cancel.
+Use the C key to alt interact.
+
 -----
 
 In it's current state, this project is very much unfinished. I plan to return to it some day to finish it off, and potentially create a new terminal game engine from scratch, similar to Unity, Source, or Unreal. However, if you want to, you may fork this project to work on it yourself.  
